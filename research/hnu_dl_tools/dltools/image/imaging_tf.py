@@ -33,37 +33,3 @@ def central_crop(image, crop_height, crop_width):
     image = tf.slice(image, [crop_top, crop_left, 0],
                      [crop_height, crop_width, -1])
     return image
-
-
-def histogram_equalization(image):
-    """
-    使用 tensorflow 实现直方图均衡化
-    Parameters
-    ----------
-    image: [height, width, channels],
-
-    Returns
-    -------
-
-    """
-    shape = tf.shape(image)
-    
-    def _equalize_histogram(img):
-        values_range = tf.constant([0., 255.], dtype=tf.float32)
-        histogram = tf.histogram_fixed_width(
-            tf.to_float(img), values_range, 256)
-        cdf = tf.cumsum(histogram)
-        cdf_min = cdf[tf.reduce_min(tf.where(tf.greater(cdf, 0)))]
-        img_shape = tf.shape(img)
-        pix_cnt = img_shape[0] * img_shape[1]
-        px_map = tf.round(
-            tf.to_float(cdf - cdf_min) * 255. / tf.to_float(pix_cnt - 1))
-        px_map = tf.cast(px_map, image.dtype)
-        eq_hist = tf.gather_nd(px_map, tf.cast(img, tf.int32))
-        return eq_hist
-
-    channels = tf.split(image, 3, axis=2)
-    eq_channels = tf.map_fn(_equalize_histogram,
-                            tf.convert_to_tensor(channels))
-    image = tf.transpose(eq_channels, [1, 2, 0])
-    return tf.reshape(image, shape)
