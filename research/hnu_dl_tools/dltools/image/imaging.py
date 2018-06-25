@@ -6,6 +6,7 @@
 @time: 2018/3/9 21:53
 @desc: 数组图像处理的方法
 """
+import cv2
 import numpy as np
 from skimage import exposure, transform
 
@@ -74,12 +75,11 @@ def histogram_equalization(image):
 
     """
     shape = image.shape
-    dtype = image.dtype
     if 1 == shape[2]:
-        img = exposure.equalize_hist(image[:, :, 0])
+        img = cv2.equalizeHist(image[:, :, 0])
     else:
-        img0 = np.expand_dims(exposure.equalize_hist(image[:, :, 0]), axis=2)
-        img1 = np.expand_dims(exposure.equalize_hist(image[:, :, 1]), axis=2)
-        img2 = np.expand_dims(exposure.equalize_hist(image[:, :, 2]), axis=2)
+        img0 = np.expand_dims(cv2.equalizeHist(image[:, :, 0]), axis=2)
+        img1 = np.expand_dims(cv2.equalizeHist(image[:, :, 1]), axis=2)
+        img2 = np.expand_dims(cv2.equalizeHist(image[:, :, 2]), axis=2)
         img = np.concatenate([img0, img1, img2], axis=2)
-    return np.round(255 * img).astype(dtype)
+    return img
