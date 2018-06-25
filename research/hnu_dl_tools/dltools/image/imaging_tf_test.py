@@ -27,14 +27,17 @@ def test_histogram_equalization():
     img = histogram_equalization(image)
 
     image_input = tf.placeholder(tf.uint8, shape=[None, None, 3])
+    array_img = np.arange(256).reshape([16, 16, 1])
+    array_img = np.concatenate([array_img, array_img, array_img], axis=2)
     image_eq = histogram_equalization_tf(image_input)
     with tf.Session() as sess:
         tf.global_variables_initializer()
         image_eq_hist = sess.run(image_eq, feed_dict={image_input: image})
-        cv2.imshow('as', image_eq_hist)
-        cv2.waitKey(0)
         sub_image = img - image_eq_hist
         assert 1 >= np.sum(np.abs(sub_image)) / np.prod(shape), '显示相差大于 1 ！'
+
+        array_eq = sess.run(image_eq, feed_dict={image_input: array_img})
+        np.testing.assert_allclose(array_img, array_eq)
 
 
 def test_central_crop():
