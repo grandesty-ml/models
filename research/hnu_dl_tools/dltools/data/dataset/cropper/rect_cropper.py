@@ -49,7 +49,6 @@ class RectCropper(BaseCropper):
 
         """
         shape = np.asarray(self.image.shape[:2])
-        assert np.alltrue(np.greater_equal(shape, self._size))
         self._size = np.minimum(self._size, shape)
         self._seat_y = [
             x for x in range(0, shape[0] - self._size[0], self._stride[0])]

@@ -43,7 +43,7 @@ class VOCImageCropper(IterImageCropper):
     def __init__(self, image_path, xml_path,
                  output, crop_size, stride,
                  threshold=0.8, label_list=None,
-                 logger=None):
+                 logger=None, scope=None):
         """
 
         Parameters
@@ -56,12 +56,14 @@ class VOCImageCropper(IterImageCropper):
         xml_path: 标注文件
         threshold: 对象在子图中可以接受的阈值
         label_list: 对象名称列表，为 None 测考察全部对象
+        scope: scope name
         """
         self._xml_path = xml_path
         self._output = output
         self._image_info = None
         self._label_list = label_list
         self._image_path = image_path
+        self._scope = scope
         super(VOCImageCropper, self).__init__(image_path, crop_size,
                                               stride, logger)
         self._threshold = threshold
@@ -78,9 +80,11 @@ class VOCImageCropper(IterImageCropper):
         """
         # 确认输出路径
         if self._output is not None:
-            self._output = Path(self._output)
+            if self._scope is None:
+                self._scope = Path(self._image_path).stem
+            self._output = Path(self._output) / self._scope
             if not self._output.exists():
-                self._output.mkdir()
+                self._output.mkdir(parents=True)
         else:
             self._do_write = False
 
@@ -140,7 +144,7 @@ class VOCImageCropper(IterImageCropper):
 
         """
         x, y = self._buf_data['x'], self._buf_data['y']
-        image_name = '{}_{}'.format(y, x)
+        image_name = str(self._output / '{}_{}'.format(y, x))
         cv2.imwrite(image_name + '.jpg', self._buf_data['sub_image'])
         root = ET.Element('annotation')
         add_element(root, 'src_img', self._image_path)
@@ -150,7 +154,7 @@ class VOCImageCropper(IterImageCropper):
         add_element(size, 'src_width', str(self.image.shape[1]))
         add_element(size, 'height', str(self._size[0]))
         add_element(size, 'width', str(self._size[1]))
-        add_element(size, 'depth', str(self.image.shape[3]))
+        add_element(size, 'depth', str(self.image.shape[2]))
         for ob in self._buf_data['objects']:
             box = ob['box']
             ob_xml = ET.SubElement(root, 'object')
