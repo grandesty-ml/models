@@ -90,3 +90,9 @@ ENV/
 
 # PyCharm
 .idea/
+
+# visual studio code
+.vscode/
+
+# protobuf
+*_pb2.py
