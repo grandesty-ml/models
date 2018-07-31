@@ -14,3 +14,26 @@ setup(
     packages=[p for p in find_packages() if p.startswith('object_detection')],
     description='Tensorflow Object Detection Library',
 )
+
+setup(
+    name='slim',
+    version='0.1',
+    package_dir={'': 'slim'},
+    include_package_data=True,
+    packages=find_packages('slim'),
+    description='tf-slim',
+)
+
+
+setup(
+    name='dltools',
+    version='0.1',
+    include_package_data=True,
+    install_requires=REQUIRED_PACKAGES,
+    package_dir={'': 'hnu_dl_tools'},
+    packages=[p for p in find_packages('hnu_dl_tools') if p.startswith('dltools')],
+    description='deep learning toolbox',
+    url="https://gitee.com/study-cooperation",
+    author="HNU deep learning project group",
+    platforms="any",
+)
