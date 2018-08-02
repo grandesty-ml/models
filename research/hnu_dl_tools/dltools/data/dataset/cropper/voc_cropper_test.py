@@ -85,18 +85,6 @@ def test_rect_cropper():
             count += 1
     assert count == 2
 
-    cropper2 = _VOCImageCropper(img, (10, 10), (10, 10), logger=logger)
-    cropper2.image_info = image_info
-    print(cropper2)
-    assert isinstance(cropper2, Iterable)
-    for _, img in cropper2:
-        if img is None:
-            continue
-        assert isinstance(img, np.ndarray)
-        assert img.shape[0] == img.shape[1] == 10
-        assert img.shape[0] % 10 == 0
-        assert img.shape[1] % 10 == 0
-
 
 if __name__ == '__main__':
     pytest.main()

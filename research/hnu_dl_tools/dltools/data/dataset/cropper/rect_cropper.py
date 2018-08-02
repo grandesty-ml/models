@@ -36,8 +36,8 @@ class RectCropper(BaseCropper):
         self._stride = np.asarray(stride)
         self._seat_y = None
         self._seat_x = None
-        super(RectCropper, self).__init__(image_path, logger)
         self._is_write = is_write
+        super(RectCropper, self).__init__(image_path, logger)
 
     @abstractmethod
     def _set_up(self):
