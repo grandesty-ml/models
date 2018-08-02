@@ -59,8 +59,6 @@ class BaseCropper(object):
             if self.image is None:
                 self._logger.warn('There is not a image: {}'.format(image))
                 return
-            else:
-                self._image = cv2.cvtColor(self._image, cv2.COLOR_BGR2RGB)
         elif isinstance(image, np.ndarray):
             image = np.squeeze(image)
             if len(image.shape) == 3 and image.shape[0] <= 4:

@@ -12,7 +12,7 @@ from abc import abstractmethod
 from dltools.data.dataset.cropper.rect_cropper import RectCropper
 
 
-class IterImageCropper(RectCropper):
+class IterCropper(RectCropper):
     """
     切割图像并可以迭代遍历
     """
@@ -29,9 +29,21 @@ class IterImageCropper(RectCropper):
         crop_size: 子图尺寸
         stride: 切割步长
         """
-        super(IterImageCropper, self).__init__(image_path,
-                                               crop_size, stride,
-                                               logger, False)
+        self._iter = None
+        super(IterCropper, self).__init__(image_path,
+                                          crop_size, stride,
+                                          logger, False)
+        self._generate_iter()
+
+    def _generate_iter(self):
+        """
+        生成迭代器
+        Returns
+        -------
+
+        """
+        print(self._seat_x, self._seat_y)
+        self._iter = itertools.product(self._seat_x, self._seat_y)
 
     @abstractmethod
     def _crop_image(self):
@@ -56,7 +68,7 @@ class IterImageCropper(RectCropper):
         -------
 
         """
-        for x, y in itertools.product(self._seat_x, self._seat_y):
+        for x, y in self._iter:
                 self._buf_data['x'] = x
                 self._buf_data['y'] = y
                 self._crop_image()

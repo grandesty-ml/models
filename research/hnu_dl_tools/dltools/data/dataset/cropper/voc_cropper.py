@@ -6,12 +6,13 @@
 @time: 2018/4/4 20:30
 @desc: 
 """
+import xml.dom.minidom as minidom
 import xml.etree.ElementTree as ET
 from abc import abstractmethod
 from pathlib import Path
 
 import cv2
-from dltools.data.dataset.cropper.iter_cropper import IterImageCropper
+from dltools.data.dataset.cropper.rect_cropper import RectCropper
 from dltools.utils.basic import is_rectangle_overlap
 from dltools.utils.io import read_voc_xml
 
@@ -35,7 +36,7 @@ def add_element(root, name, value):
     sub_element.text = value
 
 
-class VOCImageCropper(IterImageCropper):
+class VOCImageCropper(RectCropper):
     """
     VOC 数据格式图像的切割类
     """
@@ -80,8 +81,7 @@ class VOCImageCropper(IterImageCropper):
         """
         # 确认输出路径
         if self._output is not None:
-            if self._scope is None:
-                self._scope = Path(self._image_path).stem
+            self._scope = self._scope or Path(self._image_path).stem
             self._output = Path(self._output) / self._scope
             if not self._output.exists():
                 self._output.mkdir(parents=True)
@@ -91,11 +91,11 @@ class VOCImageCropper(IterImageCropper):
         self._image_info, break_instance = read_voc_xml(
             self._xml_path, self.image.shape, self._label_list)
         if break_instance or (len(self._image_info['objects']) == 0):
-            with open(self._output.parent.parent / 'break.txt', 'a') as out:
-                out.write(self._image_path)
+            with open(self._output.parent.parent / 'break.txt',
+                      'a', encoding='utf-8') as out:
+                out.write(self._image_path + '\n')
             return True
-        else:
-            return False
+        return False
 
     @abstractmethod
     def _crop_image(self):
@@ -124,7 +124,7 @@ class VOCImageCropper(IterImageCropper):
                     new_ob['box'] = [ymin - y, xmin - x, ymax - y, xmax - x]
                     output_objects.append(new_ob)
         if len(output_objects) > 0:
-            self._is_write = True and self._do_write
+            self._is_write = self._do_write
             self._buf_data['objects'] = output_objects
             self._buf_data['sub_image'] = (
                 self.image[h_min:h_max + 1, w_min:w_max + 1, :])
@@ -167,5 +167,8 @@ class VOCImageCropper(IterImageCropper):
             add_element(bndbox, 'ymin', str(box[0]))
             add_element(bndbox, 'xmax', str(box[3]))
             add_element(bndbox, 'ymax', str(box[2]))
-        tree = ET.ElementTree(root)
-        tree.write(image_name + '.xml')
+        rough_string = ET.tostring(root, 'utf-8')
+        reared_content = minidom.parseString(rough_string)
+        with open(image_name + '.xml', 'w', encoding='utf-8') as fs:
+            reared_content.writexml(
+                fs, addindent=' ' * 4, newl='\n', encoding='utf-8')
