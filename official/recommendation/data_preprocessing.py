@@ -43,10 +43,7 @@ import tensorflow as tf
 from official.datasets import movielens
 from official.recommendation import constants as rconst
 from official.recommendation import stat_utils
-
-
-_ASYNC_GEN_PATH = os.path.join(os.path.dirname(__file__),
-                               "data_async_generation.py")
+from official.recommendation import popen_helper
 
 
 class NCFDataset(object):
@@ -62,6 +59,8 @@ class NCFDataset(object):
       item_map: Dict mapping raw item ids to regularized ids.
       num_data_readers: The number of reader Datasets used during training.
       cache_paths: Object containing locations for various cache files.
+      num_train_positives: The number of positive training examples in the
+        dataset.
     """
 
     self.user_map = {int(k): int(v) for k, v in user_map.items()}
@@ -74,7 +73,7 @@ class NCFDataset(object):
 
 
 def _filter_index_sort(raw_rating_path):
-  # type: (str) -> (pd.DataFrame, int, int)
+  # type: (str) -> (pd.DataFrame, dict, dict)
   """Read in data CSV, and output structured data.
 
   This function reads in the raw CSV of positive items, and performs three
@@ -101,8 +100,9 @@ def _filter_index_sort(raw_rating_path):
     raw_rating_path: The path to the CSV which contains the raw dataset.
 
   Returns:
-    A filtered, zero-index remapped, sorted dataframe, as well as the number
-    of users and items in the processed dataset.
+    A filtered, zero-index remapped, sorted dataframe, a dict mapping raw user
+    IDs to regularized user IDs, and a dict mapping raw item IDs to regularized
+    item IDs.
   """
   with tf.gfile.Open(raw_rating_path) as f:
     df = pd.read_csv(f)
@@ -167,6 +167,8 @@ def _train_eval_map_fn(args):
       shard pickle files.
     num_items: The cardinality of the item set, which determines the set from
       which validation negatives should be drawn.
+    cache_paths: rconst.Paths object containing locations for various cache
+      files.
 
   Returns:
     A dict containing the evaluation data for a given shard.
@@ -253,9 +255,8 @@ def generate_train_eval_data(df, approx_num_shards, num_items, cache_paths):
       imbalance does not impact performance; however it does mean that one
       should not expect approx_num_shards to be the ACTUAL number of shards.
     num_items: The cardinality of the item set.
-
-  Returns:
-    A tuple containing the validation data.
+    cache_paths: rconst.Paths object containing locations for various cache
+      files.
   """
 
   num_rows = len(df)
@@ -327,7 +328,8 @@ def construct_cache(dataset, data_dir, num_data_readers):
       data during training.
   """
   cache_paths = rconst.Paths(data_dir=data_dir)
-  num_data_readers = num_data_readers or int(multiprocessing.cpu_count() / 2)
+  num_data_readers = (num_data_readers or int(multiprocessing.cpu_count() / 2)
+                      or 1)
   approx_num_shards = int(movielens.NUM_RATINGS[dataset]
                           // rconst.APPROX_PTS_PER_TRAIN_SHARD) or 1
 
@@ -377,7 +379,6 @@ def instantiate_pipeline(dataset, data_dir, batch_size, eval_batch_size,
                          num_data_readers=None, num_neg=4, epochs_per_cycle=1):
   """Preprocess data and start negative generation subprocess."""
 
-  movielens.download(dataset=dataset, data_dir=data_dir)
   tf.logging.info("Beginning data preprocessing.")
   ncf_dataset = construct_cache(dataset=dataset, data_dir=data_dir,
                                 num_data_readers=num_data_readers)
@@ -391,14 +392,11 @@ def instantiate_pipeline(dataset, data_dir, batch_size, eval_batch_size,
   # contention with the main training process.
   subproc_env["CUDA_VISIBLE_DEVICES"] = ""
 
-  python = "python3" if six.PY3 else "python2"
-
   # By limiting the number of workers we guarantee that the worker
   # pool underlying the training generation doesn't starve other processes.
-  num_workers = int(multiprocessing.cpu_count() * 0.75)
+  num_workers = int(multiprocessing.cpu_count() * 0.75) or 1
 
-  subproc_args = [
-      python, _ASYNC_GEN_PATH,
+  subproc_args = popen_helper.INVOCATION + [
       "--data_dir", data_dir,
       "--cache_id", str(ncf_dataset.cache_paths.cache_id),
       "--num_neg", str(num_neg),
@@ -420,9 +418,7 @@ def instantiate_pipeline(dataset, data_dir, batch_size, eval_batch_size,
   tf.logging.info(
       "Generation subprocess command: {}".format(" ".join(subproc_args)))
 
-  proc = subprocess.Popen(args=subproc_args, stdin=subprocess.PIPE,
-                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                          shell=False, env=subproc_env)
+  proc = subprocess.Popen(args=subproc_args, shell=False, env=subproc_env)
 
   atexit.register(_shutdown, proc=proc)
   atexit.register(tf.gfile.DeleteRecursively,
