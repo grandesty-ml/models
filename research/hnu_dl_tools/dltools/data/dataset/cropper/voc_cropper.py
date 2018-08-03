@@ -128,11 +128,8 @@ class VOCImageCropper(RectCropper):
             self._buf_data['objects'] = output_objects
             self._buf_data['sub_image'] = (
                 self.image[h_min:h_max + 1, w_min:w_max + 1, :])
-            self._buf_data['iter_data'] = (
-                output_objects, self._buf_data['sub_image'])
         else:
             self._is_write = False
-            self._buf_data['iter_data'] = None, None
 
     @abstractmethod
     def _write_image(self):
@@ -152,6 +149,8 @@ class VOCImageCropper(RectCropper):
         size = ET.SubElement(root, 'size')
         add_element(size, 'src_height', str(self.image.shape[0]))
         add_element(size, 'src_width', str(self.image.shape[1]))
+        add_element(size, 'y', str(y))
+        add_element(size, 'x', str(x))
         add_element(size, 'height', str(self._size[0]))
         add_element(size, 'width', str(self._size[1]))
         add_element(size, 'depth', str(self.image.shape[2]))

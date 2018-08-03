@@ -24,7 +24,6 @@ class BaseCropper(object):
         Parameters
         ----------
         image: 图像或图像路径
-        output: 输出文件夹路径
         logger: 日志对象
         """
         # 配置切割参数
