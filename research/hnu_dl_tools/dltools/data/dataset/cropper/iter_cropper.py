@@ -42,7 +42,6 @@ class IterCropper(RectCropper):
         -------
 
         """
-        print(self._seat_x, self._seat_y)
         self._iter = itertools.product(self._seat_x, self._seat_y)
 
     @abstractmethod
