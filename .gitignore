@@ -89,10 +89,7 @@ ENV/
 .ropeproject
 
 # PyCharm
-.idea/
-
-# visual studio code
 .vscode/
-
-# protobuf
+.idea/
 *_pb2.py
+.pytest_cache/
